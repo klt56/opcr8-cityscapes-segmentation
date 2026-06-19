@@ -1,0 +1,35 @@
+# Données Cityscapes (ne JAMAIS pousser, trop lourd)
+data/
+
+# Environnement virtuel Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# MLflow (peut être lourd, à régénérer si besoin)
+mlruns/
+
+# Modèles intermédiaires (on garde uniquement le champion)
+models/test_pipeline_*
+models/unet_mini_*
+models/vgg16_unet_NOaug_*
+models/vgg16_unet_aug_totalloss_*
+
+# Fichiers temporaires
+*.tmp
+*.log
+.DS_Store
+Thumbs.db
+
+# VS Code, PyCharm
+.vscode/
+.idea/
+
+notebooks/
+*.ipynb
+
+# Variables d'environnement secrètes
+.env
+*.secret
