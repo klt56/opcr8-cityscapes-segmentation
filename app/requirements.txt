@@ -1,0 +1,9 @@
+# Framework de l'application web
+streamlit==1.40.1
+
+# Communication HTTP avec l'API
+requests==2.32.4
+
+# Manipulation d'images
+Pillow==10.4.0
+numpy==1.24.3

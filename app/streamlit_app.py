@@ -22,7 +22,8 @@ import numpy as np
 # Configuration
 # -----------------------------------------------------------------------------
 
-URL_API           = "http://localhost:8000"
+import os
+URL_API = os.environ.get("URL_API", "http://localhost:8000")
 DOSSIER_PROJET    = Path.home() / "opcr8"
 CHEMIN_TEST_CSV   = DOSSIER_PROJET / "data" / "splits" / "test.csv"
 DOSSIER_DATA      = DOSSIER_PROJET / "data"
