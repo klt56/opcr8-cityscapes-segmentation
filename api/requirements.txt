@@ -1,7 +1,7 @@
 # Framework API
-fastapi==0.115.5
-uvicorn[standard]==0.32.0
-python-multipart==0.0.12
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
 
 # Modèle et inférence
 tensorflow==2.13.1
@@ -9,4 +9,8 @@ numpy==1.24.3
 Pillow==10.4.0
 
 # Utilitaires
-gunicorn==23.0.0
+gunicorn==21.2.0
+
+# Versions explicites pour éviter les conflits
+typing-extensions==4.5.0
+pydantic==2.5.0
