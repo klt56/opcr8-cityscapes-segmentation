@@ -1,0 +1,11 @@
+nom,image,masque_verite
+bochum_000000_029203_leftImg8bit.png,images/img_00.png,masques/mask_00.png
+erfurt_000053_000019_leftImg8bit.png,images/img_01.png,masques/mask_01.png
+dusseldorf_000036_000019_leftImg8bit.png,images/img_02.png,masques/mask_02.png
+dusseldorf_000157_000019_leftImg8bit.png,images/img_03.png,masques/mask_03.png
+dusseldorf_000163_000019_leftImg8bit.png,images/img_04.png,masques/mask_04.png
+erfurt_000078_000019_leftImg8bit.png,images/img_05.png,masques/mask_05.png
+dusseldorf_000214_000019_leftImg8bit.png,images/img_06.png,masques/mask_06.png
+bochum_000000_001828_leftImg8bit.png,images/img_07.png,masques/mask_07.png
+dusseldorf_000165_000019_leftImg8bit.png,images/img_08.png,masques/mask_08.png
+darmstadt_000001_000019_leftImg8bit.png,images/img_09.png,masques/mask_09.png

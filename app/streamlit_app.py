@@ -2,33 +2,38 @@
 Application Streamlit pour la démo du modèle de segmentation Cityscapes.
 
 Permet de :
-1. Sélectionner une image parmi les 53 du test set
+1. Sélectionner une image parmi les 10 images de démo embarquées
 2. Appeler l'API FastAPI pour faire la prédiction
 3. Afficher côte à côte : image originale / masque vérité / masque prédit
+
+Les images et masques vérité sont pré-calculés (voir prepare_demo.py) et
+embarqués dans app/data_demo/ pour fonctionner en déploiement sans dépendre
+du dataset complet ni de src/labels.py.
 """
 
 import base64
 import csv
 import io
+import os
 from pathlib import Path
 
 import requests
 import streamlit as st
 from PIL import Image
-import numpy as np
 
 
 # -----------------------------------------------------------------------------
 # Configuration
 # -----------------------------------------------------------------------------
 
-import os
 URL_API = os.environ.get("URL_API", "http://localhost:8000")
-DOSSIER_PROJET    = Path.home() / "opcr8"
-CHEMIN_TEST_CSV   = DOSSIER_PROJET / "data" / "splits" / "test.csv"
-DOSSIER_DATA      = DOSSIER_PROJET / "data"
 
-# Palette officielle Cityscapes (mêmes couleurs que dans l'API)
+# Dossier de démo (relatif à l'emplacement de ce script)
+DOSSIER_APP = Path(__file__).parent
+DOSSIER_DEMO = DOSSIER_APP / "data_demo"
+CHEMIN_DEMO_CSV = DOSSIER_DEMO / "demo.csv"
+
+# Palette officielle Cityscapes (pour la légende)
 PALETTE_CITYSCAPES = {
     0: (0,   0,   0),       # void
     1: (128, 64,  128),     # flat
@@ -49,49 +54,13 @@ NOMS_CATEGORIES = ["void", "flat", "construction", "object",
 # -----------------------------------------------------------------------------
 
 @st.cache_data
-def charger_liste_paires():
-    """
-    Charge la liste des paires (image, masque) du test set depuis test.csv.
-    Le décorateur @st.cache_data met le résultat en cache pour ne pas
-    relire le CSV à chaque interaction.
-    """
-    paires = []
-    with open(CHEMIN_TEST_CSV, encoding="utf-8") as f:
+def charger_liste_demo():
+    """Charge la liste des images de démo depuis demo.csv."""
+    entrees = []
+    with open(CHEMIN_DEMO_CSV, encoding="utf-8") as f:
         for row in csv.DictReader(f):
-            paires.append((row["image"], row["masque"]))
-    return paires
-
-
-def charger_masque_verite(chemin_masque):
-    """
-    Charge le masque vérité depuis disque et le colore avec la palette Cityscapes.
-    Le masque sur disque est en indices 34 catégories Cityscapes officielles,
-    on doit le mapper en 8 catégories puis colorer.
-    """
-    # Lecture du masque (image en niveaux de gris où chaque pixel = id de catégorie)
-    masque_pil = Image.open(chemin_masque)
-    masque_pil = masque_pil.resize((512, 256), Image.NEAREST)
-    masque_34 = np.array(masque_pil)
-
-    # Mapping 34 -> 8 (table de correspondance)
-    # On reconstruit la même LUT que dans data_generator.py
-    import sys
-    sys.path.insert(0, str(DOSSIER_PROJET / "src"))
-    import labels as cs
-
-    lut = np.zeros(256, dtype=np.uint8)
-    for label in cs.labels:
-        if label.id >= 0:
-            lut[label.id] = label.categoryId
-    masque_8 = lut[masque_34]
-
-    # Coloration via la palette
-    h, w = masque_8.shape
-    image_rgb = np.zeros((h, w, 3), dtype=np.uint8)
-    for idx, couleur in PALETTE_CITYSCAPES.items():
-        image_rgb[masque_8 == idx] = couleur
-
-    return Image.fromarray(image_rgb, mode="RGB")
+            entrees.append((row["nom"], row["image"], row["masque_verite"]))
+    return entrees
 
 
 def appeler_api_predict(chemin_image):
@@ -113,7 +82,7 @@ def appeler_api_predict(chemin_image):
 def verifier_api():
     """Vérifie que l'API est joignable."""
     try:
-        reponse = requests.get(f"{URL_API}/healthcheck", timeout=2)
+        reponse = requests.get(f"{URL_API}/healthcheck", timeout=5)
         return reponse.status_code == 200
     except Exception:
         return False
@@ -123,7 +92,7 @@ def verifier_api():
 # Interface utilisateur Streamlit
 # -----------------------------------------------------------------------------
 
-st.set_page_parameters = st.set_page_config(
+st.set_page_config(
     page_title="Segmentation Cityscapes — Démo",
     page_icon="🚗",
     layout="wide",
@@ -140,42 +109,39 @@ st.markdown(
 # Vérification que l'API est disponible
 if not verifier_api():
     st.error(
-        "❌ **L'API n'est pas accessible** sur `http://localhost:8000`. "
-        "Vérifiez qu'elle est bien lancée dans un terminal séparé "
-        "(`cd ~/opcr8/api && uvicorn main:app --reload`)."
+        "❌ **L'API n'est pas accessible**. "
+        "Vérifiez que l'API est bien déployée et que la variable "
+        "d'environnement `URL_API` pointe vers la bonne adresse."
     )
     st.stop()
 
 st.success("✅ API connectée et opérationnelle")
 
-# Chargement de la liste des images du test set
-paires = charger_liste_paires()
+# Chargement de la liste des images de démo
+entrees = charger_liste_demo()
 
 # Sélecteur d'image
 st.subheader("Sélection de l'image")
-liste_noms_images = [Path(img).name for img, _ in paires]
 indice_choisi = st.selectbox(
-    f"Choisissez une image parmi les {len(paires)} du test set :",
-    options=range(len(liste_noms_images)),
-    format_func=lambda i: f"{i+1:02d}. {liste_noms_images[i]}",
+    f"Choisissez une image parmi les {len(entrees)} du jeu de test :",
+    options=range(len(entrees)),
+    format_func=lambda i: f"{i+1:02d}. {entrees[i][0]}",
 )
 
-chemin_image_rel, chemin_masque_rel = paires[indice_choisi]
-chemin_image  = DOSSIER_DATA / chemin_image_rel
-chemin_masque = DOSSIER_DATA / chemin_masque_rel
+nom, image_rel, masque_rel = entrees[indice_choisi]
+chemin_image = DOSSIER_DEMO / image_rel
+chemin_masque = DOSSIER_DEMO / masque_rel
 
 # Bouton pour lancer la prédiction
 if st.button("🔍 Lancer la prédiction", type="primary"):
     with st.spinner("Prédiction en cours..."):
-        # Appel API
         masque_predit, erreur = appeler_api_predict(chemin_image)
 
     if erreur:
         st.error(erreur)
     else:
-        # Chargement des autres images pour l'affichage
         image_originale = Image.open(chemin_image)
-        masque_verite   = charger_masque_verite(chemin_masque)
+        masque_verite = Image.open(chemin_masque)
 
         # Affichage 3 colonnes
         st.subheader("Résultats")
@@ -185,7 +151,7 @@ if st.button("🔍 Lancer la prédiction", type="primary"):
             st.image(image_originale, caption="Image originale", use_container_width=True)
 
         with col2:
-            st.image(masque_verite, caption="Masque vérité terrain", use_container_width=True)
+            st.image(masque_verite, caption="Masque vérité terrain (8 catégories)", use_container_width=True)
 
         with col3:
             st.image(masque_predit, caption="Masque prédit par VGG16 U-Net", use_container_width=True)
@@ -193,15 +159,14 @@ if st.button("🔍 Lancer la prédiction", type="primary"):
         # Légende des couleurs
         st.subheader("Légende des catégories")
         cols_legende = st.columns(8)
-        for i, (nom, couleur) in enumerate(zip(NOMS_CATEGORIES, PALETTE_CITYSCAPES.values())):
+        for i, (nom_cat, couleur) in enumerate(zip(NOMS_CATEGORIES, PALETTE_CITYSCAPES.values())):
             with cols_legende[i]:
-                # Petit carré coloré + nom
                 couleur_hex = "#{:02x}{:02x}{:02x}".format(*couleur)
                 st.markdown(
                     f"<div style='background-color:{couleur_hex}; "
                     f"width:30px; height:30px; border-radius:5px; "
                     f"margin-bottom:5px;'></div>"
-                    f"<small>{nom}</small>",
+                    f"<small>{nom_cat}</small>",
                     unsafe_allow_html=True
                 )
 
