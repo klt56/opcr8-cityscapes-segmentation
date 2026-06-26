@@ -11,6 +11,6 @@ Pillow==10.4.0
 # Utilitaires
 gunicorn==21.2.0
 
-# Versions verrouillées pour résoudre le conflit avec TensorFlow 2.13
+# Versions verrouillées pour compatibilité avec TensorFlow 2.13
 typing-extensions==4.5.0
-pydantic==2.4.2
+pydantic==1.10.13
