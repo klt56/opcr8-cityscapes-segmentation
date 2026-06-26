@@ -46,3 +46,5 @@ tensorflow-estimator==2.13.0
 tensorflow-io-gcs-filesystem==0.34.0
 termcolor==2.4.0
 wrapt==1.16.0
+# Streamlit (pour le déploiement de l'app frontend)
+streamlit==1.40.1
