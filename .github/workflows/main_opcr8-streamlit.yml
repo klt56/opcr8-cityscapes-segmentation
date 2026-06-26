@@ -64,4 +64,4 @@ jobs:
         with:
           app-name: 'opcr8-streamlit'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_XXXXXX }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_0F49B09E96B1437CA454EAF86EC91474 }}
